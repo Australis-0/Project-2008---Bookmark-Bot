@@ -23,6 +23,7 @@ global.listBookmarks = function (arg0_user, arg1_filters, arg2_message) {
     bookmarks_obj = (filters.user) ? Object.filter(bookmarks_obj, bookmark => bookmark.original_message.author.id == filters.user) : bookmarks_obj,
     bookmarks_obj = (filters.channel) ? Object.filter(bookmarks_obj, bookmark => bookmark.original_message.channel.id == filters.channel) : bookmarks_obj,
     bookmarks_obj = (filters.guild) ? Object.filter(bookmarks_obj, bookmark => bookmark.original_message.guild.id == filters.guild) : bookmarks_obj;
+  
   /*
     Filters:
       {
