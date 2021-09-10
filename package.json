@@ -1,0 +1,20 @@
+{
+  "name": "bookmark.bot",
+  "version": "1.0.0",
+  "description": "A rapidly prototyped Bookmark Bot for the purposes of code optimisation and Discord component functionality.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "bookmark",
+    "bot",
+    "discord"
+  ],
+  "author": "Australis",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^13.1.0",
+    "fs": "0.0.1-security"
+  }
+}
