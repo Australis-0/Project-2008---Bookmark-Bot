@@ -35,7 +35,6 @@ global.listBookmarks = function (arg0_user, arg1_filters, arg2_message) {
     bookmarks_obj = (filters.guild) ? Object.filter(bookmarks_obj, bookmark => bookmark.og_srvr_id == filters.guild) : bookmarks_obj, bookmark_keys = Object.keys(bookmarks_obj);
 
   //Generate compact formatting
-  //console.log(filters);
   if (bookmark_keys.length > 0) for (var i = 0; i < bookmark_keys.length; i++) {
     var b = usr.bookmarks[bookmark_keys[i]];
     (!is_compact) ? bookmark_embeds.push({
@@ -44,33 +43,24 @@ global.listBookmarks = function (arg0_user, arg1_filters, arg2_message) {
       url: `https://discord.com/channels/${b.guild}/${b.channel}/${b.message}`,
       author: { name: b.og_username, icon_url: `${b.og_avatar}`},
       footer: { text: (b.og_content.substring(0, 50)) + ((b.og_content >= 50) ? "..." : "")}
-    }) : bookmarks_list.push(`${i+1}) ${b.og_username} - ${b.og_content.substring(0, 50) + ((b.og_content >= 50) ? "..." : "")}`);
+    }) : bookmarks_list.push(`${i+1}) ${b.og_username} - [${b.og_content.substring(0, 50) + ((b.og_content >= 50) ? "..." : "")}](https://discord.com/channels/${b.guild}/${b.channel}/${b.message})`);
   }
   if (bookmark_keys.length == 0) bookmarks_list.push("No bookmarks found!");
 
   //Generate embeds if bookmark_embeds is still empty
   if (bookmark_embeds.length == 0) for (var i = 0; i < bookmarks_list.length; i++) {
     local_bookmarks_list.push(bookmarks_list[i]);
-    if (i != 0 || bookmarks_list.length == 1) if (i % 20 == 0 || i == local_bookmarks_list.length-1) bookmark_embeds.push({
-      color: 0x6699f,
-      title: `**Bookmark List (Page ${Math.ceil(i/20)} of ${Math.ceil(bookmarks_list.length/20)}):**`,
-      description: local_bookmarks_list.join("\n")
-    });
+    if (i != 0 || bookmarks_list.length == 1) if (i % 20 == 0 || i == bookmarks_list.length-1) {
+      bookmark_embeds.push({
+        color: 0x6699f,
+        title: `**Bookmark List (Page ${Math.ceil(i/20)} of ${Math.ceil(bookmarks_list.length/20)}):**`,
+        description: local_bookmarks_list.join("\n")
+      });
+      local_bookmarks_list = [];
+    }
   }
 
-  //console.log(bookmark_embeds);
   scrollMessage(msg, bookmark_embeds, page, user_id);
-
-  /*
-    Filters:
-      {
-        channel: channel_id,
-        guild: guild_id,
-        user: user_id,
-        is_compact: true/false,
-        page: #
-      }
-  */
 };
 global.parseFilters = function (arg0_original_args) {
   //Convert from parameters, declare local instance variables
@@ -85,7 +75,6 @@ global.scrollMessage = async function (arg0_message, arg1_embeds, arg2_starting_
   //Convert from parameters, declare local instance variables
   var msg = arg0_message, embeds = arg1_embeds, starting_page = (arg2_starting_page) ? arg2_starting_page : 0, user_id = arg3_user_id;
 
-  //console.log(embeds[starting_page]);
   //Send first page as embed, add interface object to message
   msg.channel.send({ embeds: [embeds[starting_page]] }).then((msg) => {
     main.interfaces[msg.id] = { embeds: embeds, page: starting_page, starting_page: starting_page, user_id: user_id };
