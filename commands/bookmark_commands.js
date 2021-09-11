@@ -1,10 +1,20 @@
 global.addBookmark = async function (arg0_user, arg1_bookmark, arg2_message) {
   //Convert from parameters
-  var user_id = arg0_user, usr = initUser(arg0_user), bookmark = arg1_bookmark, msg = arg2_message;
+  var user_id = arg0_user, usr = initUser(arg0_user), bookmark = arg1_bookmark, msg = arg2_message, m = await client.channels.cache.get(msg.channelId).messages.fetch(bookmark[2]);;
 
   //Add bookmark to DB
-  usr.bookmarks[bookmark[2]] = { channel: bookmark[0], guild: bookmark[1], message: bookmark[2], original_message: await client.channels.cache.get(msg.channelId).messages.fetch(bookmark[2]) };
-  msg.channel.send((!usr.bookmarks[bookmark_id]) ? ":bookmark: **You have added this message to your collection of bookmarks.**\n\nView them by typing `b/list`." : "You have already added that message as a bookmark!\n\nReply to it with `b/remove` to remove it from your collection.");
+  msg.channel.send((!usr.bookmarks[bookmark[2]]) ? ":bookmark: **You have added this message to your collection of bookmarks.**\n\nView them by typing `b/list`." : "You have already added that message as a bookmark!\n\nReply to it with `b/remove` to remove it from your collection.");
+  usr.bookmarks[bookmark[2]] = {
+    channel: bookmark[0],
+    guild: bookmark[1],
+    message: bookmark[2],
+    og_avatar: m.author.avatarURL(),
+    og_user_id: m.author.id,
+    og_chnl_id: m.channel.id,
+    og_srvr_id: m.guild.id,
+    og_content: m.content,
+    og_username: m.author.username
+  };
 };
 global.removeBookmark = function (arg0_user, arg1_bookmark_id, arg2_message) {
   //Convert from parameters
@@ -20,35 +30,36 @@ global.listBookmarks = function (arg0_user, arg1_filters, arg2_message) {
   var user_id = arg0_user, usr = initUser(arg0_user), filters = parseFilters(arg1_filters), msg = arg2_message;
   filters.user = (filters.user == "this") ? user_id : filters.user, filters.channel = (filters.channel == "this") ? msg.channel.id : filters.channel, filters.guild = (filters.guild == "this") ? msg.guild.id : filters.guild; //'this' argument handler, filter bookmarks below
   var bookmark_embeds = [], bookmarks_list = [], bookmarks_obj = JSON.parse(JSON.stringify(usr.bookmarks)), is_compact = (filters.compact), local_bookmarks_list = [], page = (isNaN(parseInt(filters.page))) ? 0 : parseInt(filters.page)-1,
-    bookmarks_obj = (filters.user) ? Object.filter(bookmarks_obj, bookmark => bookmark.original_message.author.id == filters.user) : bookmarks_obj,
-    bookmarks_obj = (filters.channel) ? Object.filter(bookmarks_obj, bookmark => bookmark.original_message.channel.id == filters.channel) : bookmarks_obj,
-    bookmarks_obj = (filters.guild) ? Object.filter(bookmarks_obj, bookmark => bookmark.original_message.guild.id == filters.guild) : bookmarks_obj, bookmark_keys = Object.keys(bookmarks_obj);
+    bookmarks_obj = (filters.user) ? Object.filter(bookmarks_obj, bookmark => bookmark.og_user_id == filters.user) : bookmarks_obj,
+    bookmarks_obj = (filters.channel) ? Object.filter(bookmarks_obj, bookmark => bookmark.og_chnl_id == filters.channel) : bookmarks_obj,
+    bookmarks_obj = (filters.guild) ? Object.filter(bookmarks_obj, bookmark => bookmark.og_srvr_id == filters.guild) : bookmarks_obj, bookmark_keys = Object.keys(bookmarks_obj);
 
   //Generate compact formatting
-  if (is_compact) for (var i = 0; i < bookmark_keys.length; i++) bookmarks_list.push(`${i+1}) ${b.original_message.author.username} - ${b.original_message.content.substring(0, 50) + (bookmark.original_message.length >= 50) ? "..." : ""}`);
-  if (bookmark_keys.length > 0 && !is_compact) for (var i = 0; i < bookmark_keys.length; i++) {
+  //console.log(filters);
+  if (bookmark_keys.length > 0) for (var i = 0; i < bookmark_keys.length; i++) {
     var b = usr.bookmarks[bookmark_keys[i]];
-    bookmark_embeds.push({
+    (!is_compact) ? bookmark_embeds.push({
       color: 0x6699f,
       title: `Go to ${client.guilds.cache.get(b.guild).name}`,
       url: `https://discord.com/channels/${b.guild}/${b.channel}/${b.message}`,
-      author: { name: b.original_message.author.username, icon_url: `https://discord.com/users/${b.original_message.author.avatarURL()}`},
-      footer: { text: (b.original_message.content.substring(0, 50)) + (bookmark.original_message.length >= 50) ? "..." : ""}
-    });
+      author: { name: b.og_username, icon_url: `${b.og_avatar}`},
+      footer: { text: (b.og_content.substring(0, 50)) + ((b.og_content >= 50) ? "..." : "")}
+    }) : bookmarks_list.push(`${i+1}) ${b.og_username} - ${b.og_content.substring(0, 50) + ((b.og_content >= 50) ? "..." : "")}`);
   }
   if (bookmark_keys.length == 0) bookmarks_list.push("No bookmarks found!");
 
   //Generate embeds if bookmark_embeds is still empty
   if (bookmark_embeds.length == 0) for (var i = 0; i < bookmarks_list.length; i++) {
     local_bookmarks_list.push(bookmarks_list[i]);
-    if (i != 0 || local_bookmarks_list.length == 1) if (i % 20 == 0 || i == local_bookmarks_list.length-1) bookmark_embeds.push({
+    if (i != 0 || bookmarks_list.length == 1) if (i % 20 == 0 || i == local_bookmarks_list.length-1) bookmark_embeds.push({
       color: 0x6699f,
-      title: `**Bookmark List (Page ${Math.ceil(i/20)} of ${Math.ceil(bookmarks_list.length/20)}):`,
+      title: `**Bookmark List (Page ${Math.ceil(i/20)} of ${Math.ceil(bookmarks_list.length/20)}):**`,
       description: local_bookmarks_list.join("\n")
     });
   }
 
-  scrollMessage(msg, bookmark_embeds, page);
+  //console.log(bookmark_embeds);
+  scrollMessage(msg, bookmark_embeds, page, user_id);
 
   /*
     Filters:
@@ -70,15 +81,17 @@ global.parseFilters = function (arg0_original_args) {
   processed_obj.user = (processed_obj.user) ? processed_obj.user.replace(/[<!@>]/gm, "") : undefined, processed_obj.channel = (processed_obj.channel) ? processed_obj.channel.replace(/[<#>]/gm, "") : undefined;
   return processed_obj;
 };
-global.scrollMessage = async function (arg0_message, arg1_embeds, arg2_starting_page) {
+global.scrollMessage = async function (arg0_message, arg1_embeds, arg2_starting_page, arg3_user_id) {
   //Convert from parameters, declare local instance variables
-  var msg = arg0_message, embeds = arg1_embeds, starting_page = (arg2_starting_page) ? arg2_starting_page : 0;
+  var msg = arg0_message, embeds = arg1_embeds, starting_page = (arg2_starting_page) ? arg2_starting_page : 0, user_id = arg3_user_id;
 
+  //console.log(embeds[starting_page]);
   //Send first page as embed, add interface object to message
-  msg.channel.send(embeds[starting_page]).then((msg) => {
-    (starting_page == 0) ? msg.react("➡️") : msg.react("⬅️");
-    if (starting_page != 0 && starting_page != embeds.length-1) msg.react("➡️");
+  msg.channel.send({ embeds: [embeds[starting_page]] }).then((msg) => {
+    main.interfaces[msg.id] = { embeds: embeds, page: starting_page, starting_page: starting_page, user_id: user_id };
 
-    main.interfaces[msg.id] = { page: starting_page };
+    if (embeds.length > 1)
+      (starting_page == 0) ? msg.react("➡️") : msg.react("⬅️");
+      if (starting_page != 0 && starting_page != embeds.length-1) msg.react("➡️");
   });
 }
