@@ -10,4 +10,4 @@ setTimeout(function(){
 }, 0);
 setInterval(function(){
   fs.writeFile("user_data.json", JSON.stringify(main), function (err, data) { if (err) { return console.log(err); }});
-}, 1000);
+}, 30000);
