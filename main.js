@@ -5,7 +5,7 @@ global.files = [require("./config"), require("./commands/bookmark_commands.js"),
 global.Object.filter = (obj, predicate) => Object.keys(obj).filter(key => predicate(obj[key])).reduce((res, key) => (res[key] = obj[key], res), {});
 
 //Initialise global instance variables
-global.main = { interfaces: {}, users: {}};
+global.commands = 6, global.main = { interfaces: {}, users: {}};
 
 client.on("messageReactionAdd", async (reaction, user) => {
   var m = reaction.message, ui = main.interfaces[reaction.message.id];
@@ -27,7 +27,10 @@ client.on("messageReactionAdd", async (reaction, user) => {
 client.on("messageCreate", (message) => {
   //Argument processing
   var arg = message.content.replace(/ +(?= )/g, "").split(" ");
+  if (arg[0] == "b/help") help(message);
+  if (arg[0] == "b/invite") help(message);
   if (arg[0] == "b/list") listBookmarks(message.author.id, arg, message);
+  if (arg[0] == "b/status") status(message);
   if (message.type == "REPLY" && arg[0] == "b/add") addBookmark(message.author.id, [message.reference.channelId, message.reference.guildId, message.reference.messageId], message);
   if (message.type == "REPLY" && arg[0] == "b/remove") removeBookmark(message.author.id, message.reference.messageId, message);
 });

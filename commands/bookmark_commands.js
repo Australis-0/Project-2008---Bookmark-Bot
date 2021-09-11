@@ -25,6 +25,12 @@ global.removeBookmark = function (arg0_user, arg1_bookmark_id, arg2_message) {
   delete usr.bookmarks[bookmark_id];
 };
 
+global.help = function (msg) {
+  msg.channel.send({ embeds: [{ color: 0x6699f, description: "A list of all top-level cmds! They do what they sound like.", fields: [{ name: "Commands", value: "`add`, `help`, `invite`, `list`, `remove`, `status`" }]}]})
+}
+global.invite = function (msg) {
+  msg.channel.send({ embeds: [{ color: 0x6699f, author: { name: "Invite" }, title: "Click here!", url: "https://discord.com/api/oauth2/authorize?client_id=885910286664613968&permissions=2405&scope=bot"}]});
+};
 global.listBookmarks = function (arg0_user, arg1_filters, arg2_message) {
   //Convert from parameters, declare local variables/functions
   var user_id = arg0_user, usr = initUser(arg0_user), filters = parseFilters(arg1_filters), msg = arg2_message;
@@ -83,4 +89,9 @@ global.scrollMessage = async function (arg0_message, arg1_embeds, arg2_starting_
       (starting_page == 0) ? msg.react("➡️") : msg.react("⬅️");
       if (starting_page != 0 && starting_page != embeds.length-1) msg.react("➡️");
   });
-}
+};
+global.status = function (msg) {
+  msg.channel.send({ embeds: [{
+    color: 0x6699f, title: "Status", fields: [{ name: "Guilds", value: `in ${client.guilds.cache.length} of them`}, { name: "Commands", value: global.commands }, { name: "Version", value: process.version }, { name: "Ping", value: `${Date.now() - msg.createdTimestamp}ms` }]
+  }]});
+};
